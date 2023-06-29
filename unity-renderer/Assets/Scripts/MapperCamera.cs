@@ -92,7 +92,7 @@ public class MapperCamera : MonoBehaviour
             return;
         }
 
-        string fullScreenshotPath = GetCurrentScreenshotPath();
+        string fullScreenshotPath = GetCurrentScreenshotPath("map");
         // check if screenshot was already taken and skip if so
         if (System.IO.File.Exists(fullScreenshotPath))
         {
@@ -176,7 +176,7 @@ public class MapperCamera : MonoBehaviour
 
     void WaitForScreenshot()
     {
-        string fullScreenshotPath = GetCurrentScreenshotPath();
+        string fullScreenshotPath = GetCurrentScreenshotPath("map");
         // check if screenshot was already taken
         if (System.IO.File.Exists(fullScreenshotPath))
         {
@@ -241,17 +241,17 @@ public class MapperCamera : MonoBehaviour
 
     private void TakeScreenshot()
     {
-        string fullScreenshotPath = GetCurrentScreenshotPath();
+        string fullScreenshotPath = GetCurrentScreenshotPath("map");
         Debug.Log("Taking screenshot at (" + currentX + "," + currentY + ") now!");
         ScreenCapture.CaptureScreenshot(fullScreenshotPath);
         Invoke("GoToNextParcel", 2f);
     }
 
-    private string GetCurrentScreenshotPath()
+    private string GetCurrentScreenshotPath(string directory)
     {
         string desktopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop);
         string name = currentX + "," + currentY + ".png";
-        string fullScreenshotPath = desktopPath + "/map/" + name;
+        string fullScreenshotPath = Path.Combine(desktopPath, directory, name);
         return fullScreenshotPath;
     }
 
