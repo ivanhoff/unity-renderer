@@ -229,7 +229,7 @@ public class MapperCamera : MonoBehaviour
             {
                 Debug.Log("Timeout waiting for screenshot at coordinate (" + currentX + "," + currentY + ")");
             }
-            StartCoroutine(TakeScreenshot("day"));
+            StartCoroutine(TakeScreenshotsAndGoToNextParcel());
         }
         else
         {
@@ -241,12 +241,20 @@ public class MapperCamera : MonoBehaviour
 
     private IEnumerator TakeScreenshot(string mode)
     {
-        yield return new WaitForSeconds(waitBeforeScreenshot);
         string screenshotMode = mode == "day" ? "map" : (mode == "night" ? "map-night" : "");
         string fullScreenshotPath = GetCurrentScreenshotPath(screenshotMode);
-        Debug.Log("Taking screenshot at (" + currentX + "," + currentY + ") now!");
+        Debug.Log("Taking " + mode + " screenshot at (" + currentX + "," + currentY + ") now!");
         ScreenCapture.CaptureScreenshot(fullScreenshotPath);
-        Invoke("GoToNextParcel", 2f);
+        yield return null;
+    }
+
+    private IEnumerator TakeScreenshotsAndGoToNextParcel()
+    {
+        yield return new WaitForSeconds(waitBeforeScreenshot);
+        yield return StartCoroutine(TakeScreenshot("day"));
+        yield return StartCoroutine(TakeScreenshot("night"));
+        yield return new WaitForSeconds(2f);
+        GoToNextParcel();
     }
 
     private string GetCurrentScreenshotPath(string destDirectory)
