@@ -252,9 +252,29 @@ public class MapperCamera : MonoBehaviour
     {
         yield return new WaitForSeconds(waitBeforeScreenshot);
         yield return StartCoroutine(TakeScreenshot("day"));
+        DisableLightSources();
         yield return StartCoroutine(TakeScreenshot("night"));
         yield return new WaitForSeconds(2f);
         GoToNextParcel();
+    }
+
+    private void DisableLightSources()
+    {
+        // Set environment lighting source to a black
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+        RenderSettings.ambientSkyColor = Color.black;
+        // Disable all light sources in the scene
+        Light[] lights = FindObjectsOfType<Light>();
+        foreach (Light light in lights)
+        {
+            light.enabled = false;
+        }
+        // Disable reflections probes
+        ReflectionProbe[] reflectionProbes = FindObjectsOfType<ReflectionProbe>();
+        foreach (ReflectionProbe probe in reflectionProbes)
+        {
+            probe.enabled = false;
+        }
     }
 
     private string GetCurrentScreenshotPath(string destDirectory)
