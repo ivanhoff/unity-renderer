@@ -256,6 +256,7 @@ public class MapperCamera : MonoBehaviour
         yield return StartCoroutine(TakeScreenshot("night"));
         yield return new WaitForSeconds(2f);
         GoToNextParcel();
+        EnableLightSources();
     }
 
     private void DisableLightSources()
@@ -274,6 +275,25 @@ public class MapperCamera : MonoBehaviour
         foreach (ReflectionProbe probe in reflectionProbes)
         {
             probe.enabled = false;
+        }
+    }
+
+    private void EnableLightSources()
+    {
+        // Set environment lighting source to a default settings
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+        RenderSettings.ambientSkyColor = new Color32(243, 201, 173, 255);
+        // Enable all light sources in the scene
+        Light[] lights = FindObjectsOfType<Light>();
+        foreach (Light light in lights)
+        {
+            light.enabled = true;
+        }
+        // Enable reflections probes
+        ReflectionProbe[] reflectionProbes = FindObjectsOfType<ReflectionProbe>();
+        foreach (ReflectionProbe probe in reflectionProbes)
+        {
+            probe.enabled = true;
         }
     }
 
