@@ -276,6 +276,7 @@ public class MapperCamera : MonoBehaviour
         {
             probe.enabled = false;
         }
+        Debug.Log("Disable light sources");
     }
 
     private void EnableLightSources()
@@ -294,7 +295,9 @@ public class MapperCamera : MonoBehaviour
         foreach (ReflectionProbe probe in reflectionProbes)
         {
             probe.enabled = true;
+            probe.RenderProbe();
         }
+        Debug.Log("Enable light sources");
     }
 
     private string GetCurrentScreenshotPath(string destDirectory)
