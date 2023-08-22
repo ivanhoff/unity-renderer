@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using DCL.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,7 +14,8 @@ public class FavoritesSubSectionComponentView : BaseComponentView, IFavoritesSub
     internal const string FAVORITE_CARDS_POOL_NAME = "Places_FavoriteCardsPool";
     private const int FAVORITE_CARDS_POOL_PREWARM = 20;
 
-    private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+    private readonly CancellationTokenSource disposeCts = new ();
+    private CancellationTokenSource setFavoritesCts;
 
     [Header("Assets References")]
     [SerializeField] internal PlaceCardComponentView placeCardPrefab;
@@ -46,6 +48,7 @@ public class FavoritesSubSectionComponentView : BaseComponentView, IFavoritesSub
     public event Action OnReady;
     public event Action<PlaceCardComponentModel> OnInfoClicked;
     public event Action<IHotScenesController.PlaceInfo> OnJumpInClicked;
+    public event Action<string, bool?> OnVoteChanged;
     public event Action<string, bool> OnFavoriteClicked;
     public event Action<FriendsHandler> OnFriendHandlerAdded;
     public event Action OnFavoriteSubSectionEnable;
@@ -77,7 +80,7 @@ public class FavoritesSubSectionComponentView : BaseComponentView, IFavoritesSub
     public override void Dispose()
     {
         base.Dispose();
-        cancellationTokenSource.Cancel();
+        disposeCts.Cancel();
 
         showMoreFavoritesButton.onClick.RemoveAllListeners();
 
@@ -106,7 +109,9 @@ public class FavoritesSubSectionComponentView : BaseComponentView, IFavoritesSub
         this.favorites.ExtractItems();
         this.favorites.RemoveItems();
 
-        SetFavoritesAsync(places, cancellationTokenSource.Token).Forget();
+        setFavoritesCts?.SafeCancelAndDispose();
+        setFavoritesCts = CancellationTokenSource.CreateLinkedTokenSource(disposeCts.Token);
+        SetFavoritesAsync(places, setFavoritesCts.Token).Forget();
     }
 
     public void SetFavoritesAsLoading(bool isVisible)
@@ -120,13 +125,15 @@ public class FavoritesSubSectionComponentView : BaseComponentView, IFavoritesSub
     }
 
     public void AddFavorites(List<PlaceCardComponentModel> places) =>
-        SetFavoritesAsync(places, cancellationTokenSource.Token).Forget();
+        SetFavoritesAsync(places, disposeCts.Token).Forget();
 
     private async UniTask SetFavoritesAsync(List<PlaceCardComponentModel> places, CancellationToken cancellationToken)
     {
         foreach (PlaceCardComponentModel place in places)
         {
-            PlaceCardComponentView placeCard = PlacesAndEventsCardsFactory.CreateConfiguredPlaceCard(favoritesCardsPool, place, OnInfoClicked, OnJumpInClicked, OnFavoriteClicked);
+            // The server might not be in sync yet with the local favorites, we force them to be favorites
+            place.isFavorite = true;
+            PlaceCardComponentView placeCard = PlacesAndEventsCardsFactory.CreateConfiguredPlaceCard(favoritesCardsPool, place, OnInfoClicked, OnJumpInClicked, OnVoteChanged, OnFavoriteClicked);
             OnFriendHandlerAdded?.Invoke(placeCard.friendsHandler);
 
             this.favorites.AddItem(placeCard);
@@ -140,6 +147,8 @@ public class FavoritesSubSectionComponentView : BaseComponentView, IFavoritesSub
 
     public void SetActive(bool isActive)
     {
+        if (canvas.enabled == isActive)
+            return;
         canvas.enabled = isActive;
 
         if (isActive)
@@ -154,7 +163,7 @@ public class FavoritesSubSectionComponentView : BaseComponentView, IFavoritesSub
     public void ShowPlaceModal(PlaceCardComponentModel placeInfo)
     {
         placeModal.Show();
-        PlacesCardsConfigurator.Configure(placeModal, placeInfo, OnInfoClicked, OnJumpInClicked, OnFavoriteClicked);
+        PlacesCardsConfigurator.Configure(placeModal, placeInfo, OnInfoClicked, OnJumpInClicked, OnVoteChanged, OnFavoriteClicked);
     }
 
     public void HidePlaceModal()

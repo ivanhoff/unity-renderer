@@ -44,16 +44,17 @@ namespace DCL.ECSComponents
 
             for (int i = 0; i < meshFilters.Count; i++)
             {
-                if (meshFilters[i].gameObject.layer == PhysicsLayers.characterOnlyLayer)
+                if (!IsCollider(meshFilters[i]))
+                    continue;
+
+                Collider collider = meshFilters[i].gameObject.GetComponent<Collider>();
+
+                if (collider != null)
                 {
-                    Collider collider = meshFilters[i].gameObject.GetComponent<Collider>();
                     collider.enabled = false;
                     invisibleMeshesColliders.Add(collider);
                     continue;
                 }
-
-                if (!IsCollider(meshFilters[i]))
-                    continue;
 
                 MeshCollider newCollider = meshFilters[i].gameObject.AddComponent<MeshCollider>();
                 newCollider.sharedMesh = meshFilters[i].sharedMesh;
@@ -114,8 +115,17 @@ namespace DCL.ECSComponents
 
             foreach (Renderer renderer in renderers)
             {
-                MeshFilter meshFilter = renderer.GetComponent<MeshFilter>();
-                Mesh colliderMesh = meshFilter ? meshFilter.sharedMesh : null;
+                Mesh colliderMesh = null;
+
+                if (renderer is SkinnedMeshRenderer skinnedMeshRenderer)
+                {
+                    colliderMesh = skinnedMeshRenderer.sharedMesh;
+                }
+                else
+                {
+                    MeshFilter meshFilter = renderer.GetComponent<MeshFilter>();
+                    colliderMesh = meshFilter ? meshFilter.sharedMesh : null;
+                }
 
                 if (!colliderMesh)
                     continue;
