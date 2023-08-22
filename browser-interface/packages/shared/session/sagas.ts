@@ -1,5 +1,6 @@
-import { Authenticator } from '@dcl/crypto'
+import { AuthIdentity, Authenticator } from '@dcl/crypto'
 import { createUnsafeIdentity } from '@dcl/crypto/dist/crypto'
+import * as SingleSignOn from '@dcl/single-sign-on-client'
 import {
   DEBUG_KERNEL_LOG,
   ETHEREUM_NETWORK,
@@ -143,8 +144,10 @@ function* authenticate(action: AuthenticateAction) {
   let isSignUp = avatar.version <= 0 && !PREVIEW
   if (getFeatureFlagVariantName(store.getState(), 'seamless_login_variant') === 'enabled') {
 
+    const isNewUser : boolean = avatar.version <= 0
     const tosAccepted: boolean = !!((yield call(getFromPersistentStorage, 'tos_popup_accepted')) as boolean)
-    isSignUp = !tosAccepted && !PREVIEW
+    const tosShown: boolean = !!((yield call(getFromPersistentStorage, 'tos_popup_shown')) as boolean)
+    isSignUp = !PREVIEW && (isNewUser || tosShown) && !tosAccepted
   }
 
   if (isSignUp) {
@@ -314,7 +317,17 @@ async function createAuthIdentity(requestManager: RequestManager, isGuest: boole
 
   const { address, signer, hasConnectedWeb3, ephemeralLifespanMinutes } = await getSigner(requestManager, isGuest)
 
-  const auth = await Authenticator.initializeAuthChain(address, ephemeral, ephemeralLifespanMinutes, signer)
+  let auth: AuthIdentity
+
+  const ssoIdentity = await SingleSignOn.getIdentity(address)
+
+  if (!ssoIdentity) {
+    auth = await Authenticator.initializeAuthChain(address, ephemeral, ephemeralLifespanMinutes, signer)
+
+    await SingleSignOn.storeIdentity(address, auth)
+  } else {
+    auth = ssoIdentity
+  }
 
   return { ...auth, rawAddress: address, address: address.toLowerCase(), hasConnectedWeb3 }
 }

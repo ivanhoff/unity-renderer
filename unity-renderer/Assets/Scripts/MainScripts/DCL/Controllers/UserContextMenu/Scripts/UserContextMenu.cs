@@ -70,6 +70,10 @@ public class UserContextMenu : MonoBehaviour
     [SerializeField] internal Button deleteFriendButton;
     [SerializeField] internal Button messageButton;
     [SerializeField] internal Button mentionButton;
+    [SerializeField] internal Button copyNameButton;
+
+    [Header("Misc")]
+    [SerializeField] private ShowHideAnimator nameCopiedToast;
 
     public static event Action<string> OnOpenPrivateChatRequest;
 
@@ -89,22 +93,23 @@ public class UserContextMenu : MonoBehaviour
     private MenuConfigFlags currentConfigFlags;
     private IConfirmationDialog currentConfirmationDialog;
     private CancellationTokenSource friendOperationsCancellationToken = new ();
-    private bool isFreomMentionContextMenu = false;
+    private bool isFromMentionContextMenu;
+    private IFriendsController friendsControllerInternal;
+    private IClipboard clipboardInternal;
     private bool isNewFriendRequestsEnabled => DataStore.i.featureFlags.flags.Get().IsFeatureEnabled("new_friend_requests");
     private bool isFriendsEnabled => DataStore.i.featureFlags.flags.Get().IsFeatureEnabled("friends_enabled");
-    internal ISocialAnalytics socialAnalytics;
-
-    private IFriendsController _friendsController;
 
     private IFriendsController friendsController
     {
         get
         {
-            if (_friendsController == null) { _friendsController = Environment.i.serviceLocator.Get<IFriendsController>(); }
-
-            return _friendsController;
+            return friendsControllerInternal ??= Environment.i.serviceLocator.Get<IFriendsController>();
         }
     }
+
+    private IClipboard clipboard => clipboardInternal ??= Clipboard.Create();
+
+    internal ISocialAnalytics socialAnalytics;
 
     /// <summary>
     /// Show context menu
@@ -189,7 +194,7 @@ public class UserContextMenu : MonoBehaviour
 
     public void SetPassportOpenSource(bool isFromMention)
     {
-        isFreomMentionContextMenu = isFromMention;
+        isFromMentionContextMenu = isFromMention;
     }
 
     private void Awake()
@@ -202,6 +207,7 @@ public class UserContextMenu : MonoBehaviour
         addFriendButton.onClick.AddListener(OnAddFriendButtonPressed);
         cancelFriendButton.onClick.AddListener(OnCancelFriendRequestButtonPressed);
         messageButton.onClick.AddListener(OnMessageButtonPressed);
+        copyNameButton.onClick.AddListener(OnCopyNameButtonPressed);
 
         if (mentionButton != null)
             mentionButton.onClick.AddListener(OnMentionButtonPressed);
@@ -220,7 +226,7 @@ public class UserContextMenu : MonoBehaviour
     private void OnPassportButtonPressed()
     {
         OnPassport?.Invoke(userId);
-        currentPlayerId.Set((userId, isFreomMentionContextMenu ? OPEN_PASSPORT_MENTION_SOURCE : OPEN_PASSPORT_NORMAL_SOURCE));
+        currentPlayerId.Set((userId, isFromMentionContextMenu ? OPEN_PASSPORT_MENTION_SOURCE : OPEN_PASSPORT_NORMAL_SOURCE));
         Hide();
 
         AudioScriptableObjects.dialogOpen.Play(true);
@@ -265,7 +271,7 @@ public class UserContextMenu : MonoBehaviour
         else
         {
             friendsController.RequestFriendship(userId);
-            GetSocialAnalytics().SendFriendRequestSent(UserProfile.GetOwnUserProfile().userId, userId, 0, PlayerActionSource.ProfileContextMenu);
+            GetSocialAnalytics().SendFriendRequestSent(UserProfile.GetOwnUserProfile().userId, userId, 0, PlayerActionSource.ProfileContextMenu, "");
         }
     }
 
@@ -285,7 +291,7 @@ public class UserContextMenu : MonoBehaviour
 
                 GetSocialAnalytics()
                    .SendFriendRequestCancelled(request.From, request.To,
-                        PlayerActionSource.ProfileContextMenu.ToString());
+                        PlayerActionSource.ProfileContextMenu.ToString(), request.FriendRequestId);
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {
@@ -301,7 +307,7 @@ public class UserContextMenu : MonoBehaviour
 
             GetSocialAnalytics()
                .SendFriendRequestCancelled(UserProfile.GetOwnUserProfile().userId, userId,
-                    PlayerActionSource.ProfileContextMenu.ToString());
+                    PlayerActionSource.ProfileContextMenu.ToString(), "");
         }
     }
 
@@ -476,9 +482,24 @@ public class UserContextMenu : MonoBehaviour
     {
         if (this.userId != userId) { return; }
 
-        if (action == FriendshipAction.APPROVED) { SetupFriendship(FriendshipStatus.FRIEND); }
-        else if (action == FriendshipAction.REQUESTED_TO) { SetupFriendship(FriendshipStatus.REQUESTED_TO); }
-        else if (action == FriendshipAction.DELETED || action == FriendshipAction.CANCELLED || action == FriendshipAction.REJECTED) { SetupFriendship(FriendshipStatus.NOT_FRIEND); }
+        switch (action)
+        {
+            case FriendshipAction.APPROVED:
+                SetupFriendship(FriendshipStatus.FRIEND);
+                break;
+            case FriendshipAction.REQUESTED_TO:
+                SetupFriendship(FriendshipStatus.REQUESTED_TO);
+                break;
+            case FriendshipAction.DELETED:
+            case FriendshipAction.CANCELLED:
+            case FriendshipAction.REJECTED:
+            case FriendshipAction.NONE:
+                SetupFriendship(FriendshipStatus.NOT_FRIEND);
+                break;
+            case FriendshipAction.REQUESTED_FROM:
+                SetupFriendship(FriendshipStatus.REQUESTED_FROM);
+                break;
+        }
     }
 
     private ISocialAnalytics GetSocialAnalytics()
@@ -497,6 +518,13 @@ public class UserContextMenu : MonoBehaviour
     {
         DataStore.i.notifications.DefaultErrorNotification.Set("This user was not found.", true);
         Debug.LogError($"User {userIdOrName} was not found in the catalog!");
+    }
+
+    private void OnCopyNameButtonPressed()
+    {
+        clipboard.WriteText($"@{userName.text}");
+        nameCopiedToast.gameObject.SetActive(true);
+        nameCopiedToast.ShowDelayHide(3);
     }
 
 #if UNITY_EDITOR

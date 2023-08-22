@@ -38,6 +38,12 @@ public interface ISectionToggle
     void SelectToggle(bool reselectIfAlreadyOn = false);
 
     /// <summary>
+    /// Invoke the action of un-selecting the toggle.
+    /// </summary>
+    /// <param name="reUnSelectIfAlreadyOff">True for apply the un-selection even if the toggle was already off.</param>
+    void UnSelectToggle(bool reUnSelectIfAlreadyOff = false);
+
+    /// <summary>
     /// Set the toggle visuals as selected.
     /// </summary>
     void SetSelectedVisuals();
@@ -66,7 +72,7 @@ public interface ISectionToggle
     void SetAsNew(bool isNew);
 }
 
-public class SectionToggle : MonoBehaviour, ISectionToggle, IPointerDownHandler
+public class SectionToggle : MonoBehaviour, ISectionToggle
 {
     [SerializeField] private Toggle toggle;
     [SerializeField] private GameObject newTag;
@@ -90,9 +96,6 @@ public class SectionToggle : MonoBehaviour, ISectionToggle, IPointerDownHandler
 
     private void OnEnable() =>
         StartCoroutine(ForceToRefreshToggleState());
-
-    public void OnPointerDown(PointerEventData eventData) =>
-        SelectToggle();
 
     public GameObject GameObject => gameObject;
     public RectTransform pivot => transform as RectTransform;
@@ -168,6 +171,18 @@ public class SectionToggle : MonoBehaviour, ISectionToggle, IPointerDownHandler
 
         if(!toggle.isOn)
             toggle.isOn = true;
+    }
+
+    public void UnSelectToggle(bool reUnSelectIfAlreadyOff = false)
+    {
+        if (toggle == null)
+            return;
+
+        if (reUnSelectIfAlreadyOff)
+            toggle.isOn = true;
+
+        if(toggle.isOn)
+            toggle.isOn = false;
     }
 
     public void SetSelectedVisuals()

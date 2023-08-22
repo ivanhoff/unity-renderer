@@ -8,6 +8,8 @@ namespace DCLServices.WearablesCatalogService
 {
     public interface IWearablesCatalogService : IService
     {
+        const string BASE_WEARABLES_COLLECTION_ID = "urn:decentraland:off-chain:base-avatars";
+
         BaseDictionary<string, WearableItem> WearablesCatalog { get; }
 
         UniTask<WearableCollectionsAPIData.Collection[]> GetThirdPartyCollectionsAsync(CancellationToken cancellationToken);
@@ -19,7 +21,7 @@ namespace DCLServices.WearablesCatalogService
             ICollection<string> thirdPartyCollectionIds = null,
             string name = null, (NftOrderByOperation type, bool directionAscendent)? orderBy = null);
         UniTask<(IReadOnlyList<WearableItem> wearables, int totalAmount)> RequestOwnedWearablesAsync(string userId, int pageNumber, int pageSize, bool cleanCachedPages, CancellationToken ct);
-        UniTask<IReadOnlyList<WearableItem>> RequestBaseWearablesAsync(CancellationToken ct);
+        UniTask RequestBaseWearablesAsync(CancellationToken ct);
         UniTask<(IReadOnlyList<WearableItem> wearables, int totalAmount)> RequestThirdPartyWearablesByCollectionAsync(string userId, string collectionId, int pageNumber, int pageSize, bool cleanCachedPages, CancellationToken ct);
         UniTask<WearableItem> RequestWearableAsync(string wearableId, CancellationToken ct);
         void AddWearablesToCatalog(IEnumerable<WearableItem> wearableItems);
