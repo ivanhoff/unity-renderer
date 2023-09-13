@@ -351,6 +351,7 @@ SpriteAtlas:
     - a3a66afb0cf6d49da8b0b2b18f7b20d0: 21300000
     - cea1ac0c0c969478ea2054b9a06f7c86: 21300000
     - 90be4f1cf715b4378954ea0510aeb9ba: 21300000
+    - 1430662cdb40549adb9efb73b0cfcb28: 21300000
     - 9879272c733ec44189c11c901f5b3500: 21300000
     - d364363c1b234450cb4c7ee9e1263e2d: 21300000
     - 794d4e3c645a24df9a6a20eeb079a67d: 21300000
@@ -723,6 +724,7 @@ SpriteAtlas:
   - {fileID: 21300000, guid: a3a66afb0cf6d49da8b0b2b18f7b20d0, type: 3}
   - {fileID: 21300000, guid: cea1ac0c0c969478ea2054b9a06f7c86, type: 3}
   - {fileID: 21300000, guid: 90be4f1cf715b4378954ea0510aeb9ba, type: 3}
+  - {fileID: 21300000, guid: 1430662cdb40549adb9efb73b0cfcb28, type: 3}
   - {fileID: 21300000, guid: 9879272c733ec44189c11c901f5b3500, type: 3}
   - {fileID: 21300000, guid: d364363c1b234450cb4c7ee9e1263e2d, type: 3}
   - {fileID: 21300000, guid: 794d4e3c645a24df9a6a20eeb079a67d, type: 3}
@@ -1094,6 +1096,7 @@ SpriteAtlas:
   - ContainerRadius8
   - Container12OutlineRuby
   - ManaContainer
+  - StarOutlineIcn
   - ArrowDown
   - Camera
   - InfoIcon
@@ -1146,7 +1149,7 @@ SpriteAtlas:
   - Button10
   - Container12RectTop
   - ContainerRectTop
-  - StarIcon
+  - StarSolidIcn
   - Button6
   - EditIcon
   - GradientPlaces
